@@ -365,7 +365,12 @@ class DataVariables(Mapping[Any, "DataArray"]):
         )
 
     def __len__(self) -> int:
-        return len(self._dataset._variables) - len(self._dataset._coord_names)
+        # some coordinate names may not exist in ``_variables``
+        return sum(
+            1
+            for key in self._dataset._variables
+            if key not in self._dataset._coord_names
+        )
 
     def __contains__(self, key: Hashable) -> bool:
         return key in self._dataset._variables and key not in self._dataset._coord_names
@@ -1395,13 +1400,11 @@ class Dataset(
         return _LocIndexer(self)
 
     @overload
-    def __getitem__(self, key: Hashable) -> DataArray:
-        ...
+    def __getitem__(self, key: Hashable) -> DataArray: ...
 
     # Mapping is Iterable
     @overload
-    def __getitem__(self: T_Dataset, key: Iterable[Hashable]) -> T_Dataset:
-        ...
+    def __getitem__(self: T_Dataset, key: Iterable[Hashable]) -> T_Dataset: ...
 
     def __getitem__(
         self: T_Dataset, key: Mapping[Any, Any] | Hashable | Iterable[Hashable]
@@ -1757,8 +1760,7 @@ class Dataset(
         unlimited_dims: Iterable[Hashable] | None = None,
         compute: bool = True,
         invalid_netcdf: bool = False,
-    ) -> bytes:
-        ...
+    ) -> bytes: ...
 
     # default return None
     @overload
@@ -1773,8 +1775,7 @@ class Dataset(
         unlimited_dims: Iterable[Hashable] | None = None,
         compute: Literal[True] = True,
         invalid_netcdf: bool = False,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     # compute=False returns dask.Delayed
     @overload
@@ -1790,8 +1791,7 @@ class Dataset(
         *,
         compute: Literal[False],
         invalid_netcdf: bool = False,
-    ) -> Delayed:
-        ...
+    ) -> Delayed: ...
 
     def to_netcdf(
         self,
@@ -1916,8 +1916,7 @@ class Dataset(
         region: Mapping[str, slice] | None = None,
         safe_chunks: bool = True,
         storage_options: dict[str, str] | None = None,
-    ) -> ZarrStore:
-        ...
+    ) -> ZarrStore: ...
 
     # compute=False returns dask.Delayed
     @overload
@@ -1936,8 +1935,7 @@ class Dataset(
         region: Mapping[str, slice] | None = None,
         safe_chunks: bool = True,
         storage_options: dict[str, str] | None = None,
-    ) -> Delayed:
-        ...
+    ) -> Delayed: ...
 
     def to_zarr(
         self,
@@ -6498,7 +6496,6 @@ class Dataset(
         fill_value: Any = xrdtypes.NA,
         **shifts_kwargs: int,
     ) -> T_Dataset:
-
         """Shift this dataset by an offset along one or more dimensions.
 
         Only data variables are moved; coordinates stay in place. This is
@@ -7666,10 +7663,9 @@ class Dataset(
         self: T_Dataset,
         pad_width: Mapping[Any, int | tuple[int, int]] = None,
         mode: PadModeOptions = "constant",
-        stat_length: int
-        | tuple[int, int]
-        | Mapping[Any, tuple[int, int]]
-        | None = None,
+        stat_length: (
+            int | tuple[int, int] | Mapping[Any, tuple[int, int]] | None
+        ) = None,
         constant_values: (
             float | tuple[float, float] | Mapping[Any, tuple[float, float]] | None
         ) = None,
